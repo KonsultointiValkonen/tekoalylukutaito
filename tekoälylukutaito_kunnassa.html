@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <title>Tekoälylukutaito kunnassa</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; }
+        h1 { text-align: center; }
+        .question { margin-top: 20px; }
+        button { display: block; margin: 10px 0; padding: 10px; width: 100%; }
+        .feedback { margin-top: 10px; padding: 10px; border-left: 4px solid; }
+        .feedback.positive { background-color: #e8f5e9; border-color: #2e7d32; }
+        .feedback.negative { background-color: #ffebee; border-color: #c62828; }
+        .next-button { margin-top: 15px; padding: 10px 20px; background-color: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .result { margin-top: 30px; padding: 15px; background: #e0f7fa; border-left: 4px solid #00796b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tekoälylukutaito kunnassa</h1>
+        <p>Tämä pelillinen simulaatio auttaa ymmärtämään tekoälyn vastuullisen käytön vaatimuksia kunnassa EU:n tekoälyasetuksen hengessä.</p>
+        <div id="game"></div>
+        <div class="result" id="result" style="display:none;"></div>
+    </div>
+<script>
+const questions = [
+    {
+        question: "Miten tekoäly otetaan käyttöön kunnassa?",
+        options: [
+            { text: "Otetaan käyttöön valmis järjestelmä ilman arviointia", score: -1, feedback: "Tämä ei ole suositeltavaa: vaikutusten arviointi on EU:n tekoälyasetuksen ytimessä. Oikea toimintatapa olisi tehdä vaikutusarvio ennen käyttöönottoa." },
+            { text: "Kartoitetaan tarpeet ja tehdään vaikutusarvio ennen käyttöönottoa", score: 2, feedback: "Hyvä! Tämä edustaa vastuullista ja lainmukaista lähestymistapaa." },
+            { text: "Testataan nopeasti pienessä yksikössä", score: 1, feedback: "Hyvä alku, mutta vaikutusten arviointi ja ohjeistus ovat silti tarpeen. Paras vaihtoehto olisi tehdä vaikutusarvio ennen käyttöä." }
+        ]
+    },
+    {
+        question: "Miten tekoälystä viestitään kuntalaisille?",
+        options: [
+            { text: "Ei viestitä, koska se on tekninen asia", score: -2, feedback: "Huono valinta. Läpinäkyvyys ja selkeys ovat EU:n tekoälyasetuksen keskeisiä arvoja. Oikea tapa on viestiä avoimesti ja selkokielisesti." },
+            { text: "Viestitään avoimesti ja selkokielisesti", score: 2, feedback: "Erinomaista! Kuntalaisten ymmärrys lisää luottamusta." },
+            { text: "Julkaistaan tekninen ohje kaupungin nettisivuilla", score: 0, feedback: "Parempi kuin ei mitään, mutta selkokielisyys puuttuu. Paras vaihtoehto olisi avoin ja selkokielinen viestintä." }
+        ]
+    },
+    {
+        question: "Miten henkilöstön osaamista kehitetään?",
+        options: [
+            { text: "Ei erityistä koulutusta – opitaan käytännössä", score: -1, feedback: "EU:n tekoälyasetus painottaa osaamista – tämä ei riitä. Oikea lähestymistapa on tarjota koulutusta koko henkilöstölle." },
+            { text: "Koulutetaan avainhenkilöt perusteellisesti", score: 1, feedback: "Hyvä valinta – koulutus luo pohjan turvalliselle käytölle. Vielä parempi olisi kouluttaa koko henkilöstö." },
+            { text: "Koko henkilöstölle tarjotaan perustason koulutus", score: 2, feedback: "Erinomaista! Tekoälylukutaito kuuluu kaikille." }
+        ]
+    },
+    {
+        question: "Onko tekoälyn käytölle kunnassa ohjeistus?",
+        options: [
+            { text: "Ei vielä, mutta aiotaan tehdä myöhemmin", score: -1, feedback: "Tämä ei riitä – ohjeistus tarvitaan ennen käyttöönottoa. Paras vaihtoehto on laatia selkeä ohjeistus ennen käyttöönottoa." },
+            { text: "On laadittu selkeä ohjeistus käytöstä ja vastuista", score: 2, feedback: "Tämä on juuri EU:n tekoälyasetuksen hengen mukaista toimintaa." },
+            { text: "Ohjeistus on epävirallinen ja vaihtelee yksiköittäin", score: 0, feedback: "Tarvitaan yhtenäinen ja virallinen linja. Paras vaihtoehto on selkeä ohjeistus." }
+        ]
+    },
+    {
+        question: "Miten tekoälyn käytön vaikutuksia seurataan?",
+        options: [
+            { text: "Ei seurata systemaattisesti", score: -2, feedback: "Tämä rikkoo tekoälyasetuksen periaatteita: seuranta on olennainen osa vastuuta. Paras tapa on säännöllinen seuranta ja arviointi." },
+            { text: "Käyttöä seurataan ja arvioidaan säännöllisesti", score: 2, feedback: "Juuri näin: seuranta ja jatkuva arviointi ovat tärkeitä." },
+            { text: "Seuranta vastuutettu yhdelle henkilölle", score: 1, feedback: "Hyvä alku, mutta tarvitaan myös laajempaa osallistumista ja dokumentointia. Paras tapa on säännöllinen ja kattava seuranta." }
+        ]
+    }
+];
+
+let current = 0;
+let score = 0;
+
+function showQuestion() {
+    const q = questions[current];
+    const div = document.getElementById("game");
+    div.innerHTML = `<div class="question"><h3>${q.question}</h3></div>`;
+    q.options.forEach((opt, idx) => {
+        const btn = document.createElement("button");
+        btn.innerText = opt.text;
+        btn.onclick = () => {
+            score += opt.score;
+            const feedbackClass = opt.score > 0 ? "positive" : "negative";
+            const feedback = `<div class="feedback ${feedbackClass}"><strong>Palaute:</strong> ${opt.feedback}</div>`;
+            div.innerHTML += feedback;
+
+            const allButtons = div.querySelectorAll("button");
+            allButtons.forEach(b => b.disabled = true);
+
+            const nextBtn = document.createElement("button");
+            nextBtn.innerText = "Seuraava";
+            nextBtn.className = "next-button";
+            nextBtn.onclick = () => {
+                current++;
+                if (current < questions.length) {
+                    showQuestion();
+                } else {
+                    showResult();
+                }
+            };
+            div.appendChild(nextBtn);
+        };
+        div.appendChild(btn);
+    });
+}
+
+function showResult() {
+    document.getElementById("game").style.display = "none";
+    const resultDiv = document.getElementById("result");
+    let message = "";
+    if (score >= 8) {
+        message = "Erinomaista! Kunnan tekoälylukutaito on vahva ja EU:n tekoälyasetuksen hengen mukainen.";
+    } else if (score >= 4) {
+        message = "Hyvä! Olet oikealla tiellä tekoälyn vastuullisessa käytössä.";
+    } else {
+        message = "Kehitettävää löytyy. Suosittelemme tutustumaan tekoälyasetuksen periaatteisiin tarkemmin.";
+    }
+    resultDiv.innerHTML = `<h3>Tuloksesi: ${score} / 10</h3><p>${message}</p><p>Lisätietoa: <a href=\"https://artificialintelligenceact.eu/\" target=\"_blank\">EU:n tekoälyasetus</a></p>`;
+    resultDiv.style.display = "block";
+}
+
+showQuestion();
+</script>
+</body>
+</html>
