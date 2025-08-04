@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <title>Tekoälylukutaito kunnassa</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; }
+        h1 { text-align: center; }
+        .question { margin-top: 20px; }
+        button { display: block; margin: 10px 0; padding: 10px; width: 100%; }
+        .feedback { margin-top: 10px; padding: 10px; border-left: 4px solid; }
+        .feedback.positive { background-color: #e8f5e9; border-color: #2e7d32; }
+        .feedback.negative { background-color: #ffebee; border-color: #c62828; }
+        .next-button { margin-top: 15px; padding: 10px 20px; background-color: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .result { margin-top: 30px; padding: 15px; background: #e0f7fa; border-left: 4px solid #00796b; }
+    
+    .logo-link {
+        position: absolute;
+        top: 15px;
+        left: 20px;
+        z-index: 1000;
+    }
+    .logo {
+    max-height: 100px;
+}
+</style>
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+
+    <!-- Vasemman yläkulman logo linkkinä -->
+    <a href="https://www.konsultointivalkonen.fi/" target="_blank" class="logo-link">
+        <img src="logo.png" alt="Konsultointi Valkonen logo" class="logo">
+    </a>
+
+    <div class="container">
+    <div style="text-align:right; font-size:14px;">
+        <a href="https://www.konsultointivalkonen.fi/" target="_blank">
+            Kehutut tekoälykoulutukset kuntasektorille → konsultointivalkonen.fi
+        </a>
+    </div>
+        <h1>Tekoälylukutaito kunnassa</h1>
+        <p>Tämä pelillinen simulaatio auttaa ymmärtämään tekoälyn vastuullisen käytön vaatimuksia kunnassa EU:n tekoälyasetuksen hengessä.</p>
+        <div id="game"></div>
+        <div class="result" id="result" style="display:none;"></div>
+    </div>
+<script>
+const questions = [
+    {
+        question: "Miten tekoäly otetaan käyttöön kunnassa?",
+        options: [
+            { text: "Otetaan käyttöön valmis järjestelmä ilman arviointia", score: 0, feedback: "Tämä ei ole suositeltavaa. Oikea toimintatapa olisi tehdä vaikutusarvio ennen käyttöönottoa." },
+            { text: "Kartoitetaan tarpeet ja tehdään vaikutusarvio ennen käyttöönottoa", score: 1, feedback: "Oikein! Tämä edustaa vastuullista ja lainmukaista lähestymistapaa." },
+            { text: "Testataan nopeasti pienessä yksikössä", score: 0, feedback: "Hyvä alku, mutta vaikutusten arviointi on silti tarpeen." }
+        ]
+    },
+    {
+        question: "Miten tekoälystä viestitään kuntalaisille?",
+        options: [
+            { text: "Ei viestitä, koska se on tekninen asia", score: 0, feedback: "Huono valinta. Oikea tapa on viestiä avoimesti ja selkokielisesti." },
+            { text: "Viestitään avoimesti ja selkokielisesti", score: 1, feedback: "Oikein! Kuntalaisten ymmärrys lisää luottamusta." },
+            { text: "Julkaistaan tekninen ohje kaupungin nettisivuilla", score: 0, feedback: "Parempi kuin ei mitään, mutta selkokielisyys puuttuu." }
+        ]
+    },
+    {
+        question: "Miten henkilöstön osaamista kehitetään?",
+        options: [
+            { text: "Ei erityistä koulutusta – opitaan käytännössä", score: 0, feedback: "EU:n tekoälyasetus painottaa osaamista – tämä ei riitä." },
+            { text: "Koulutetaan avainhenkilöt perusteellisesti", score: 0, feedback: "Hyvä valinta, mutta vielä parempi olisi kouluttaa koko henkilöstö." },
+            { text: "Koko henkilöstölle tarjotaan perustason koulutus", score: 1, feedback: "Oikein! Tekoälylukutaito kuuluu kaikille." }
+        ]
+    },
+    {
+        question: "Onko tekoälyn käytölle kunnassa ohjeistus?",
+        options: [
+            { text: "Ei vielä, mutta aiotaan tehdä myöhemmin", score: 0, feedback: "Tämä ei riitä – ohjeistus tarvitaan ennen käyttöönottoa." },
+            { text: "On laadittu selkeä ohjeistus käytöstä ja vastuista", score: 1, feedback: "Oikein! Tämä on juuri EU:n tekoälyasetuksen hengen mukaista." },
+            { text: "Ohjeistus on epävirallinen ja vaihtelee yksiköittäin", score: 0, feedback: "Tarvitaan yhtenäinen ja virallinen linja." }
+        ]
+    },
+    {
+        question: "Miten tekoälyn käytön vaikutuksia seurataan?",
+        options: [
+            { text: "Ei seurata systemaattisesti", score: 0, feedback: "Tämä rikkoo tekoälyasetuksen periaatteita. Paras tapa on säännöllinen seuranta." },
+            { text: "Käyttöä seurataan ja arvioidaan säännöllisesti", score: 1, feedback: "Oikein! Seuranta ja arviointi ovat tärkeitä." },
+            { text: "Seuranta vastuutettu yhdelle henkilölle", score: 0, feedback: "Hyvä alku, mutta tarvitaan myös laajempaa osallistumista." }
+        ]
+    }
+];
+
+let current = 0;
+let score = 0;
+
+function showQuestion() {
+    const q = questions[current];
+    const div = document.getElementById("game");
+    div.innerHTML = `<div class="question"><h3>${q.question}</h3></div>`;
+    q.options.forEach((opt, idx) => {
+        const btn = document.createElement("button");
+        btn.innerText = opt.text;
+        btn.onclick = () => {
+            score += opt.score;
+            const feedbackClass = opt.score === 1 ? "positive" : "negative";
+            const feedback = `<div class="feedback ${feedbackClass}"><strong>Palaute:</strong> ${opt.feedback}</div>`;
+            div.innerHTML += feedback;
+
+            const allButtons = div.querySelectorAll("button");
+            allButtons.forEach(b => b.disabled = true);
+
+            const nextBtn = document.createElement("button");
+            nextBtn.innerText = "Seuraava";
+            nextBtn.className = "next-button";
+            nextBtn.onclick = () => {
+                current++;
+                if (current < questions.length) {
+                    showQuestion();
+                } else {
+                    showResult();
+                }
+            };
+            div.appendChild(nextBtn);
+        };
+        div.appendChild(btn);
+    });
+}
+
+function showResult() {
+    document.getElementById("game").style.display = "none";
+    const resultDiv = document.getElementById("result");
+    let message = "";
+    if (score >= 8) {
+        message = "Erinomaista! Kunnan tekoälylukutaito on vahva ja EU:n tekoälyasetuksen hengen mukainen.";
+    } else if (score >= 4) {
+        message = "Hyvä! Olet oikealla tiellä tekoälyn vastuullisessa käytössä.";
+    } else {
+        message = "Kehitettävää löytyy. Suosittelemme tutustumaan tekoälyasetuksen periaatteisiin tarkemmin.";
+    }
+    resultDiv.innerHTML = `<h3>Tuloksesi: ${score} / 5</h3><p>${message}</p>
+    <p>Lisätietoa: <a href=\"https://artificialintelligenceact.eu/\" target=\"_blank\">EU:n tekoälyasetus</a></p>
+    <button onclick=\"location.reload()\" style=\"margin-top: 20px; padding: 10px 20px; background-color: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;\">Aloita alusta</button>`;
+    resultDiv.style.display = "block";
+}
+
+showQuestion();
+</script>
+</body>
+</html>
